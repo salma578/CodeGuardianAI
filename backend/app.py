@@ -7,37 +7,28 @@ import shutil
 
 
 app = Flask(__name__)
-
 CORS(app)
-
 
 
 @app.route("/")
 def home():
-
     return "CodeGuardianAI Backend is Running!"
 
 
-
-
-
-# =====================================
-# CODE ANALYSIS API
-# =====================================
+# ==================================================
+# CODE SECURITY ANALYZER
+# ==================================================
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
 
-
     data = request.get_json()
 
-    code = data.get("code","")
+    code = data.get("code", "")
 
     lines = code.split("\n")
 
-
     vulnerabilities = []
-
 
     score = 100
 
@@ -47,326 +38,225 @@ def analyze():
     safe = 0
 
 
+    weak_passwords = [
+        '"123456"',
+        "'123456'",
+        '"password"',
+        "'password'",
+        '"admin"',
+        "'admin'",
+        '"qwerty"',
+        "'qwerty'"
+    ]
 
 
-    # Hardcoded Password
+    for number, line in enumerate(lines, start=1):
 
-    for index,line in enumerate(lines):
+        text = line.lower()
 
 
-        if "password =" in line.lower():
-
+        if "password =" in text:
 
             vulnerabilities.append({
 
-                "title":"Hardcoded Password",
-
-                "line":index+1,
-
-                "severity":"High",
+                "title": "Hardcoded Password",
+                "line": number,
+                "severity": "High",
 
                 "explanation":
-                "Passwords should never be stored in source code.",
+                "Passwords should not be stored directly in source code.",
 
                 "fix":
-                "Store passwords in environment variables.",
-
-                "ai_recommendation":
-                "This vulnerability can expose user credentials. Attackers can extract passwords from source code. Environment variables protect sensitive information.",
+                "Use environment variables.",
 
                 "patch":
                 'import os\n\npassword = os.getenv("PASSWORD")'
 
             })
 
-
             high += 1
             score -= 20
 
-            break
 
 
-
-
-
-    # Weak Password
-
-
-    weak_passwords=[
-        "123456",
-        "password",
-        "admin",
-        "qwerty"
-    ]
-
-
-
-    for index,line in enumerate(lines):
-
-
-        for pwd in weak_passwords:
-
-
-            if pwd in line.lower():
-
-
-                vulnerabilities.append({
-
-                    "title":"Weak Password",
-
-                    "line":index+1,
-
-                    "severity":"Medium",
-
-                    "explanation":
-                    "The password is easy to guess.",
-
-                    "fix":
-                    "Use a strong password.",
-
-                    "ai_recommendation":
-                    "Weak passwords can be cracked using brute force attacks. Use long passwords with uppercase, lowercase, numbers and symbols.",
-
-                    "patch":
-                    'password = "S3cure@2026"'
-
-                })
-
-
-                medium += 1
-
-                score -= 10
-
-                break
-
-
-
-
-
-
-    # SQL Injection
-
-
-    for index,line in enumerate(lines):
-
-
-        if "select" in line.lower():
-
+        if any(value in text for value in weak_passwords):
 
             vulnerabilities.append({
 
-                "title":"SQL Injection",
+                "title": "Weak Password",
 
-                "line":index+1,
+                "line": number,
 
-                "severity":"Critical",
+                "severity": "Medium",
 
                 "explanation":
-                "SQL query is created directly from user input.",
+                "The password is easy to guess.",
 
                 "fix":
-                "Use parameterized queries instead of string concatenation.",
+                "Create a strong password.",
 
-                "ai_recommendation":
-                "Attackers can manipulate SQL queries and access unauthorized database information.",
+                "patch":
+                'password = "S3cure@2026"'
+
+            })
+
+            medium += 1
+            score -= 10
+
+
+
+        if "select" in text:
+
+            vulnerabilities.append({
+
+                "title": "SQL Injection",
+
+                "line": number,
+
+                "severity": "Critical",
+
+                "explanation":
+                "SQL queries should not directly use user input.",
+
+                "fix":
+                "Use parameterized queries.",
 
                 "patch":
                 'cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))'
 
             })
 
-
             critical += 1
-
             score -= 30
 
-            break
 
 
-
-
-
-    # eval
-
-
-    for index,line in enumerate(lines):
-
-
-        if "eval(" in line:
-
+        if "eval(" in text:
 
             vulnerabilities.append({
 
-                "title":"Dangerous eval()",
+                "title": "Dangerous eval()",
 
-                "line":index+1,
+                "line": number,
 
-                "severity":"High",
+                "severity": "High",
 
                 "explanation":
-                "eval() can execute dangerous code.",
+                "eval() can execute unsafe code.",
 
                 "fix":
                 "Avoid using eval().",
 
-                "ai_recommendation":
-                "eval() may allow attackers to execute malicious commands.",
-
                 "patch":
-                "# Remove eval() and validate input"
+                "# Remove eval()"
 
             })
 
-
             high += 1
-
-            score -=20
-
-            break
+            score -= 20
 
 
 
-
-
-    if len(vulnerabilities)==0:
-
+    if not vulnerabilities:
 
         vulnerabilities.append({
 
-            "title":"No Vulnerabilities Found",
+            "title":
+            "No Vulnerabilities Found",
 
-            "line":"-",
+            "line":
+            "-",
 
-            "severity":"Safe",
+            "severity":
+            "Safe",
 
             "explanation":
             "No common security issues detected.",
-
-            "fix":
-            "No action required.",
-
-            "ai_recommendation":
-            "Your code passed security checks.",
 
             "patch":
             "No patch needed."
 
         })
 
-
-        safe=1
-
+        safe = 1
 
 
-
-    if score < 0:
-
-        score=0
-
-
+    score = max(score, 0)
 
 
     return jsonify({
 
-        "status":"success",
+        "status": "success",
 
-        "message":"Analysis completed",
+        "message": "Analysis completed",
 
-        "score":score,
+        "score": score,
 
-        "critical":critical,
+        "critical": critical,
 
-        "high":high,
+        "high": high,
 
-        "medium":medium,
+        "medium": medium,
 
-        "safe":safe,
+        "safe": safe,
 
-        "vulnerabilities":vulnerabilities
+        "vulnerabilities": vulnerabilities
 
     })
-
-
-
-
-
-
-
-# =====================================
+# ==================================================
 # AUTO PATCH GENERATOR
-# =====================================
+# ==================================================
 
-
-@app.route("/generate_patch",methods=["POST"])
+@app.route("/generate_patch", methods=["POST"])
 def generate_patch():
 
+    data = request.get_json()
 
-    data=request.get_json()
+    code = data.get("code", "")
 
-
-    code=data.get("code","")
-
-
-    fixed_code=code
+    fixed_code = code
 
 
+    replacements = {
 
-    fixed_code=fixed_code.replace(
+        'password = "123456"':
+        'import os\n\npassword = os.getenv("PASSWORD")',
 
-        'password = "123456"',
+        "password = '123456'":
+        "import os\n\npassword = os.getenv('PASSWORD')",
 
-        'import os\n\npassword = os.getenv("PASSWORD")'
+        'password = "password"':
+        'import os\n\npassword = os.getenv("PASSWORD")',
 
-    )
+        "password = 'password'":
+        "import os\n\npassword = os.getenv('PASSWORD')",
 
+        'password = "admin"':
+        'import os\n\npassword = os.getenv("PASSWORD")',
 
+        "password = 'admin'":
+        "import os\n\npassword = os.getenv('PASSWORD')",
 
-    fixed_code=fixed_code.replace(
+        'password = "qwerty"':
+        'import os\n\npassword = os.getenv("PASSWORD")',
 
-        "password = '123456'",
-
+        "password = 'qwerty'":
         "import os\n\npassword = os.getenv('PASSWORD')"
 
-    )
+    }
 
 
+    for old, new in replacements.items():
 
-
-    for pwd in [
-
-        "123456",
-        "password",
-        "admin",
-        "qwerty"
-
-    ]:
-
-
-        fixed_code=fixed_code.replace(
-
-            f'"{pwd}"',
-
-            '"S3cure@2026"'
-
-        )
-
-
-        fixed_code=fixed_code.replace(
-
-            f"'{pwd}'",
-
-            "'S3cure@2026'"
-
-        )
-
+        fixed_code = fixed_code.replace(old, new)
 
 
 
     return jsonify({
 
-        "status":"success",
+        "status": "success",
 
-        "fixed_code":fixed_code
+        "fixed_code": fixed_code
 
     })
 
@@ -374,51 +264,54 @@ def generate_patch():
 
 
 
-
-
-# =====================================
+# ==================================================
 # GITHUB REPOSITORY SCANNER
-# =====================================
+# ==================================================
 
-
-@app.route("/scan_github",methods=["POST"])
+@app.route("/scan_github", methods=["POST"])
 def scan_github():
 
 
-    data=request.get_json()
+    data = request.get_json()
 
-
-    repo_url=data.get("repo_url")
+    repo_url = data.get("url")
 
 
 
     if not repo_url:
 
-
         return jsonify({
 
-            "status":"error",
+            "status": "error",
 
-            "message":"Repository URL required"
+            "message": "Repository URL required"
 
         })
 
 
 
-
-    folder="temp_repo"
-
-
-
-    if os.path.exists(folder):
-
-        shutil.rmtree(folder)
-
+    folder = "temp_repo"
 
 
 
     try:
 
+
+        # Remove previous cloned repo
+
+        if os.path.exists(folder):
+
+            try:
+
+                shutil.rmtree(folder)
+
+            except Exception:
+
+                pass
+
+
+
+        # Clone GitHub repository
 
         git.Repo.clone_from(
 
@@ -430,26 +323,49 @@ def scan_github():
 
 
 
-        combined_code=""
+        results = []
+
+        files_scanned = 0
+
+        score = 100
 
 
 
-        for root,dirs,files in os.walk(folder):
+        weak_values = [
+
+            '"123456"',
+            "'123456'",
+            '"password"',
+            "'password'",
+            '"admin"',
+            "'admin'"
+        ]
 
 
-            for file in files:
+
+        for root, dirs, files in os.walk(folder):
 
 
-                if file.endswith(".py"):
+            for filename in files:
 
 
-                    path=os.path.join(
+                if filename.endswith(".py"):
+
+
+                    files_scanned += 1
+
+
+                    path = os.path.join(
 
                         root,
 
-                        file
+                        filename
 
                     )
+
+
+                    problems = []
+
 
 
                     with open(
@@ -462,45 +378,143 @@ def scan_github():
 
                         errors="ignore"
 
-                    ) as f:
+                    ) as file:
 
 
-                        combined_code += "\n\n" + f.read()
+                        lines = file.readlines()
 
+
+
+                    for line_number, line in enumerate(lines, start=1):
+
+
+                        text = line.lower()
+
+
+
+                        if "password =" in text:
+
+
+                            problems.append({
+
+                                "issue":
+                                "Hardcoded Password",
+
+                                "line":
+                                line_number,
+
+                                "severity":
+                                "High"
+
+                            })
+
+                            score -= 20
+
+
+
+
+                        if any(value in text for value in weak_values):
+
+
+                            problems.append({
+
+                                "issue":
+                                "Weak Password",
+
+                                "line":
+                                line_number,
+
+                                "severity":
+                                "Medium"
+
+                            })
+
+                            score -= 10
+
+
+
+
+                        if "eval(" in text:
+
+
+                            problems.append({
+
+                                "issue":
+                                "Dangerous eval()",
+
+                                "line":
+                                line_number,
+
+                                "severity":
+                                "High"
+
+                            })
+
+                            score -= 20
+
+
+
+
+                    results.append({
+
+                        "file": filename,
+
+                        "issues": problems
+
+                    })
+
+
+
+        score = max(score, 0)
 
 
 
         return jsonify({
 
-            "status":"success",
+            "status": "success",
 
-            "message":
-            "Repository scanned successfully",
+            "repository": repo_url,
 
-            "code":
-            combined_code
+            "files_scanned": files_scanned,
+
+            "score": score,
+
+            "results": results
 
         })
 
 
-
-
-    except Exception as e:
+    except Exception as error:
 
 
         return jsonify({
 
-            "status":"error",
+            "status": "error",
 
-            "message":str(e)
+            "message": str(error)
 
         })
 
 
+    finally:
+
+        if os.path.exists(folder):
+
+            try:
+
+                shutil.rmtree(folder)
+
+            except Exception:
+
+                pass
 
 
+# ==================================================
+# RUN APPLICATION
+# ==================================================
 
+if __name__ == "__main__":
 
-if __name__=="__main__":
-
-    app.run(debug=True)
+    app.run(
+        debug=True
+    )
