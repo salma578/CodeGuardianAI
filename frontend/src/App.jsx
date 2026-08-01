@@ -8,22 +8,31 @@ function App() {
 
 const [code,setCode]=useState("");
 const [fileName,setFileName]=useState("");
+
 const [result,setResult]=useState(null);
 const [fixedCode,setFixedCode]=useState("");
 
 const [githubUrl,setGithubUrl]=useState("");
 const [githubResult,setGithubResult]=useState(null);
 
+const [loading,setLoading]=useState(false);
+const [githubLoading,setGithubLoading]=useState(false);
 
 
 
-// Upload Python File
+
+// ================= FILE UPLOAD =================
+
 
 const handleFileUpload=(event)=>{
 
+
 const file=event.target.files[0];
 
-if(!file) return;
+
+if(!file)
+return;
+
 
 
 if(!file.name.endsWith(".py")){
@@ -34,10 +43,13 @@ return;
 }
 
 
+
 setFileName(file.name);
 
 
+
 const reader=new FileReader();
+
 
 
 reader.onload=(e)=>{
@@ -47,7 +59,9 @@ setCode(e.target.result);
 };
 
 
+
 reader.readAsText(file);
+
 
 
 };
@@ -57,37 +71,64 @@ reader.readAsText(file);
 
 
 
+// ================= ANALYZE CODE =================
 
-// Analyze Code
+
 
 const analyzeCode=async()=>{
+
+
+if(!code){
+
+alert("Please upload or paste Python code");
+
+return;
+
+}
+
+
+
+setLoading(true);
+
 
 
 try{
 
 
 const response=await fetch(
+
 "http://127.0.0.1:5000/analyze",
+
 {
 
 method:"POST",
 
 headers:{
+
 "Content-Type":"application/json"
+
 },
 
+
 body:JSON.stringify({
+
 code:code
+
 })
+
 
 }
 
 );
 
 
+
 const data=await response.json();
 
+
+
 setResult(data);
+
 
 
 }
@@ -99,6 +140,15 @@ alert("Backend is not running");
 }
 
 
+
+finally{
+
+setLoading(false);
+
+}
+
+
+
 };
 
 
@@ -106,9 +156,8 @@ alert("Backend is not running");
 
 
 
+// ================= AUTO PATCH =================
 
-
-// Generate Patch
 
 
 const generatePatch=async()=>{
@@ -118,28 +167,39 @@ try{
 
 
 const response=await fetch(
+
 "http://127.0.0.1:5000/generate_patch",
+
 {
 
 method:"POST",
 
 headers:{
+
 "Content-Type":"application/json"
+
 },
 
+
 body:JSON.stringify({
+
 code:code
+
 })
+
 
 }
 
 );
 
 
+
 const data=await response.json();
 
 
+
 setFixedCode(data.fixed_code);
+
 
 
 }
@@ -151,6 +211,7 @@ alert("Patch generation failed");
 }
 
 
+
 };
 
 
@@ -160,26 +221,44 @@ alert("Patch generation failed");
 
 
 
+// ================= GITHUB SCANNER =================
 
-
-// GitHub Scanner
 
 
 const scanGithub=async()=>{
+
+
+if(!githubUrl){
+
+alert("Enter GitHub URL");
+
+return;
+
+}
+
+
+
+setGithubLoading(true);
+
 
 
 try{
 
 
 const response=await fetch(
+
 "http://127.0.0.1:5000/scan_github",
+
 {
 
 method:"POST",
 
 headers:{
+
 "Content-Type":"application/json"
+
 },
+
 
 body:JSON.stringify({
 
@@ -187,18 +266,33 @@ url:githubUrl
 
 })
 
+
 }
 
 );
 
 
+
 const data=await response.json();
 
 
+
+if(data.status==="error"){
+
+alert(data.message);
+
+}
+
+else{
+
 setGithubResult(data);
+
+}
+
 
 
 }
+
 
 catch(error){
 
@@ -207,6 +301,15 @@ alert("GitHub scan failed");
 }
 
 
+
+finally{
+
+setGithubLoading(false);
+
+}
+
+
+
 };
 
 
@@ -216,23 +319,29 @@ alert("GitHub scan failed");
 
 
 
+// ================= DOWNLOAD FIXED FILE =================
 
-
-// Download Fixed Code
 
 
 const downloadFixedCode=()=>{
 
 
 const blob=new Blob(
+
 [fixedCode],
+
 {
+
 type:"text/plain"
+
 }
+
 );
 
 
+
 const url=URL.createObjectURL(blob);
+
 
 
 const link=document.createElement("a");
@@ -247,6 +356,7 @@ link.download="secure_fixed_code.py";
 link.click();
 
 
+
 };
 
 
@@ -256,56 +366,118 @@ link.click();
 
 
 
+// ================= PDF REPORT =================
 
-
-
-// PDF Report
 
 
 const downloadReport=()=>{
 
 
+if(!result){
+
+alert("Analyze code first");
+
+return;
+
+}
+
+
+
 const doc=new jsPDF();
 
 
+
 doc.text(
+
 "CodeGuardianAI Security Report",
+
 20,
+
 20
+
 );
 
 
+
 doc.text(
-`Security Score: ${result.score}/100`,
+
+`Security Score : ${result.score}/100`,
+
 20,
+
 40
+
 );
 
 
+
 doc.text(
-`Critical: ${result.critical}`,
+
+`Critical : ${result.critical}`,
+
 20,
+
 50
+
 );
 
 
+
 doc.text(
-`High: ${result.high}`,
+
+`High : ${result.high}`,
+
 20,
+
 60
+
 );
+
 
 
 doc.text(
-`Medium: ${result.medium}`,
+
+`Medium : ${result.medium}`,
+
 20,
+
 70
+
 );
+
+
+
+let y=90;
+
+
+
+result.vulnerabilities.forEach((v,index)=>{
+
+
+doc.text(
+
+`${index+1}. ${v.title} - ${v.severity}`,
+
+20,
+
+y
+
+);
+
+
+y+=10;
+
+
+});
+
 
 
 doc.save(
+
 "CodeGuardianAI_Report.pdf"
+
 );
+
 
 
 };
@@ -323,9 +495,15 @@ return (
 <div className="container">
 
 
+
 <h1>
 CodeGuardianAI
 </h1>
+
+
+<h2>
+AI Powered Code Security Scanner
+</h2>
 
 
 
@@ -356,8 +534,13 @@ onChange={handleFileUpload}
 fileName &&
 
 <p>
+
 Selected File:
-<b>{fileName}</b>
+
+<b>
+{fileName}
+</b>
+
 </p>
 
 }
@@ -370,12 +553,11 @@ Selected File:
 
 
 
-
 <textarea
 
 rows="12"
 
-placeholder="Paste your source code here..."
+placeholder="Paste your Python code..."
 
 value={code}
 
@@ -389,11 +571,17 @@ onChange={(e)=>setCode(e.target.value)}
 
 <button onClick={analyzeCode}>
 
-Analyze File
+{
+
+loading ?
+
+"Analyzing..." :
+
+"Analyze File"
+
+}
 
 </button>
-
-
 
 
 
@@ -407,44 +595,10 @@ Analyze File
 
 
 
-<h2>
-GitHub Repository Scanner
-</h2>
-
-
-
-<input
-
-type="text"
-
-placeholder="Enter GitHub Repository URL"
-
-value={githubUrl}
-
-onChange={(e)=>setGithubUrl(e.target.value)}
-
-/>
-
-
-
-
-<button onClick={scanGithub}>
-
-Scan Repository
-
-</button>
-
-
-
-
-
-
-
-
-
 {
 
 result &&
+
 
 <div className="card">
 
@@ -482,6 +636,7 @@ Security Score
 Critical : {result.critical}
 </p>
 
+
 <p>
 High : {result.high}
 </p>
@@ -500,20 +655,17 @@ Safe : {result.safe}
 
 
 
-
-
 <h2>
-Vulnerability Details
+Vulnerabilities
 </h2>
-
 
 
 
 {
 
-result.vulnerabilities &&
+result.vulnerabilities.map(
 
-result.vulnerabilities.map((v,index)=>(
+(v,index)=>(
 
 
 <div className="card" key={index}>
@@ -544,11 +696,19 @@ Severity : {v.severity}
 </pre>
 
 
+
 </div>
 
 
-))
+)
 
+)
+
+}
+
+
+
+</div>
 
 }
 
@@ -562,11 +722,12 @@ Severity : {v.severity}
 
 fixedCode &&
 
+
 <div className="card">
 
 
 <h2>
-Before vs After Comparison
+Before vs After
 </h2>
 
 
@@ -577,19 +738,24 @@ Original Code
 
 
 <pre>
+
 {code}
+
 </pre>
 
 
 
 
+
 <h3>
-Secure Fixed Code
+Secure Code
 </h3>
 
 
 <pre>
+
 {fixedCode}
+
 </pre>
 
 
@@ -611,13 +777,52 @@ Download Fixed Python File
 
 
 
-</div>
 
+
+
+
+
+<hr/>
+
+
+
+
+
+
+<h2>
+GitHub Repository Scanner
+</h2>
+
+
+
+<input
+
+type="text"
+
+placeholder="Enter GitHub Repository URL"
+
+value={githubUrl}
+
+onChange={(e)=>setGithubUrl(e.target.value)}
+
+/>
+
+
+
+
+<button onClick={scanGithub}>
+
+{
+
+githubLoading ?
+
+"Scanning..." :
+
+"Scan Repository"
 
 }
 
-
-
+</button>
 
 
 
@@ -627,6 +832,7 @@ Download Fixed Python File
 {
 
 githubResult &&
+
 
 <div className="card">
 
@@ -638,15 +844,11 @@ GitHub Scan Result
 
 
 <p>
-Repository:
-{githubResult.repository || githubUrl}
-</p>
 
+Files Scanned :
 
-
-<p>
-Files Scanned:
 {githubResult.files_scanned}
+
 </p>
 
 
@@ -655,9 +857,9 @@ Files Scanned:
 
 {
 
-githubResult.results &&
+githubResult.results.map(
 
-githubResult.results.map((item,index)=>(
+(item,index)=>(
 
 
 <div key={index}>
@@ -671,38 +873,33 @@ githubResult.results.map((item,index)=>(
 
 {
 
-item.issues && item.issues.length>0 ?
+item.issues.length > 0 ?
+
+item.issues.map(
+
+(issue,i)=>(
 
 
-item.issues.map((issue,i)=>(
+<p key={i}>
 
+{issue.issue}
 
-<div key={i}>
+-
 
+{issue.severity}
 
-<p>
-Issue: {issue.issue}
+-
+
+Line {issue.line}
+
 </p>
 
 
-<p>
-Line: {issue.line}
-</p>
+)
 
-
-<p>
-Severity: {issue.severity}
-</p>
-
-
-</div>
-
-
-))
-
+)
 
 :
-
 
 <p>
 No vulnerabilities found
@@ -716,8 +913,9 @@ No vulnerabilities found
 </div>
 
 
-))
+)
 
+)
 
 }
 
@@ -732,8 +930,8 @@ No vulnerabilities found
 
 
 
-
 </div>
+
 
 );
 
