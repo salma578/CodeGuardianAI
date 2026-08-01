@@ -209,8 +209,7 @@ def generate_patch():
 
     data = request.get_json(silent=True) or {}
 
-    code = data.get("code","")
-
+    code = data.get("code", "")
 
 
     replacements = {
@@ -225,32 +224,38 @@ def generate_patch():
         'import os\npassword = os.getenv("PASSWORD")',
 
         "password = 'password'":
-        "import os\npassword = os.getenv('PASSWORD')"
+        "import os\npassword = os.getenv('PASSWORD')",
+
+        'password = "admin"':
+        'import os\npassword = os.getenv("PASSWORD")',
+
+        "password = 'admin'":
+        "import os\npassword = os.getenv('PASSWORD')",
+
+        'password = "qwerty"':
+        'import os\npassword = os.getenv("PASSWORD")',
+
+        "password = 'qwerty'":
+        "import os\npassword = os.getenv('PASSWORD')",
+
+        "eval(input())":
+        "# Removed unsafe eval()\n    # Use safe input validation instead"
 
     }
 
 
+    for old, new in replacements.items():
 
-    for old,new in replacements.items():
-
-        code = code.replace(old,new)
-
+        code = code.replace(old, new)
 
 
     return jsonify({
 
-        "status":
-        "success",
+        "status": "success",
 
-        "fixed_code":
-        code
+        "fixed_code": code
 
     })
-
-
-
-
-
 # ======================================================
 # GITHUB SCANNER
 # ======================================================
@@ -332,8 +337,10 @@ def scan_github():
             for filename in files:
 
 
-                if not filename.endswith(".py"):
+                if filename == "app.py":
 
+                    continue
+                if not filename.endswith(".py"):
                     continue
 
 
