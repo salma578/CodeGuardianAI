@@ -1,0 +1,98 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #101113;
+}
+
+.container {
+  width: 80%;
+  margin: auto;
+  padding: 30px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+textarea {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #0f0d0d;
+  resize: none;
+}
+
+button {
+  margin-top: 15px;
+  padding: 12px 25px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.score-card {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  background: rgb(20, 17, 17);
+  border: 2px solid #191616;
+}
+
+.score-card h1 {
+  font-size: 40px;
+  margin: 10px;
+}
+
+.score-card p {
+  font-size: 18px;
+  margin: 5px;
+}
+
+
+.status-card {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 10px;
+  background: rgb(20, 18, 18);
+}
+
+
+.card {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  background: rgb(25, 23, 23);
+  border-left: 6px solid #131111;
+}
+
+
+.card h2 {
+  margin-top: 0;
+}
+
+
+.card p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+
+pre {
+  background: #0e0e0e;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 14px;
+}
+.upload-box {
+  margin: 20px 0;
+}
+
+.upload-box input {
+  padding: 10px;
+  margin-top: 10px;
+}
