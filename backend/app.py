@@ -336,10 +336,6 @@ def scan_github():
 
             for filename in files:
 
-
-                if filename == "app.py":
-
-                    continue
                 if not filename.endswith(".py"):
                     continue
 
