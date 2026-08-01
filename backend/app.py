@@ -10,7 +10,6 @@ app = Flask(__name__)
 CORS(app)
 
 
-
 @app.route("/")
 def home():
     return "CodeGuardianAI Backend is Running!"
@@ -21,13 +20,7 @@ def home():
 # CODE ANALYZER
 # ======================================================
 
-@app.route("/analyze", methods=["POST"])
-def analyze():
-
-    data = request.get_json(silent=True) or {}
-
-    code = data.get("code", "")
-
+def analyze_security(code):
 
     vulnerabilities = []
 
@@ -39,7 +32,6 @@ def analyze():
     safe = 0
 
 
-
     weak_passwords = [
         "123456",
         "password",
@@ -48,152 +40,99 @@ def analyze():
     ]
 
 
-
     for line_number, line in enumerate(code.splitlines(), start=1):
 
         text = line.lower()
 
 
-
-        # Hardcoded Password
-
-        if "password =" in text:
-
+        if "password =" in text and "os.getenv" not in text:
 
             vulnerabilities.append({
 
                 "title": "Hardcoded Password",
-
                 "line": line_number,
-
                 "severity": "High",
-
                 "explanation":
                 "Passwords should not be stored directly in source code.",
-
                 "fix":
                 "Use environment variables.",
-
                 "patch":
                 'import os\npassword = os.getenv("PASSWORD")'
 
             })
 
-
             high += 1
-
             score -= 20
 
 
 
-
-        # Weak Password
-
         if "=" in text and any(
-
             f'"{word}"' in text or f"'{word}'" in text
-
             for word in weak_passwords
-
         ):
-
 
             vulnerabilities.append({
 
                 "title": "Weak Password",
-
                 "line": line_number,
-
                 "severity": "Medium",
-
                 "explanation":
                 "Weak password detected.",
-
                 "fix":
                 "Use a strong password.",
-
                 "patch":
                 'password = "S3cure@2026"'
 
             })
 
-
             medium += 1
-
             score -= 10
 
 
 
-
-
-        # SQL Injection
-
-        if "select" in text:
-
-
-            vulnerabilities.append({
-
-                "title": "SQL Injection",
-
-                "line": line_number,
-
-                "severity": "Critical",
-
-                "explanation":
-                "Possible SQL Injection detected.",
-
-                "fix":
-                "Use parameterized queries.",
-
-                "patch":
-                'cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))'
-
-            })
-
-
-            critical += 1
-
-            score -= 30
-
-
-
-
-
-        # Eval
-
         if "eval(" in text:
-
 
             vulnerabilities.append({
 
                 "title": "Dangerous eval()",
-
                 "line": line_number,
-
                 "severity": "High",
-
                 "explanation":
                 "eval can execute unsafe code.",
-
                 "fix":
                 "Remove eval().",
-
                 "patch":
                 "# Remove eval()"
 
             })
 
-
             high += 1
-
             score -= 20
 
 
 
+        if "select" in text and "cursor.execute" not in text:
+
+            vulnerabilities.append({
+
+                "title": "SQL Injection",
+                "line": line_number,
+                "severity": "Critical",
+                "explanation":
+                "Possible SQL Injection detected.",
+                "fix":
+                "Use parameterized queries.",
+                "patch":
+                "Use parameterized SQL queries."
+
+            })
+
+            critical += 1
+            score -= 30
 
 
-    if len(vulnerabilities) == 0:
 
+    if not vulnerabilities:
 
         vulnerabilities.append({
 
@@ -214,11 +153,34 @@ def analyze():
 
         })
 
-
         safe = 1
 
 
 
+    return {
+
+        "score": max(score,0),
+        "critical": critical,
+        "high": high,
+        "medium": medium,
+        "safe": safe,
+        "vulnerabilities": vulnerabilities
+
+    }
+
+
+
+
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+
+    data = request.get_json(silent=True) or {}
+
+    code = data.get("code","")
+
+
+    result = analyze_security(code)
 
 
     return jsonify({
@@ -229,23 +191,7 @@ def analyze():
         "message":
         "Analysis completed",
 
-        "score":
-        max(score,0),
-
-        "critical":
-        critical,
-
-        "high":
-        high,
-
-        "medium":
-        medium,
-
-        "safe":
-        safe,
-
-        "vulnerabilities":
-        vulnerabilities
+        **result
 
     })
 
@@ -254,16 +200,14 @@ def analyze():
 
 
 # ======================================================
-# AUTO PATCH GENERATOR
+# AUTO PATCH
 # ======================================================
 
 
 @app.route("/generate_patch", methods=["POST"])
 def generate_patch():
 
-
     data = request.get_json(silent=True) or {}
-
 
     code = data.get("code","")
 
@@ -271,26 +215,25 @@ def generate_patch():
 
     replacements = {
 
-
         'password = "123456"':
-
         'import os\npassword = os.getenv("PASSWORD")',
 
-
-
         "password = '123456'":
+        "import os\npassword = os.getenv('PASSWORD')",
 
+        'password = "password"':
+        'import os\npassword = os.getenv("PASSWORD")',
+
+        "password = 'password'":
         "import os\npassword = os.getenv('PASSWORD')"
 
     }
 
 
 
-
     for old,new in replacements.items():
 
         code = code.replace(old,new)
-
 
 
 
@@ -308,11 +251,9 @@ def generate_patch():
 
 
 
-
 # ======================================================
-# GITHUB REPOSITORY SCANNER
+# GITHUB SCANNER
 # ======================================================
-
 
 
 @app.route("/scan_github", methods=["POST"])
@@ -321,25 +262,19 @@ def scan_github():
 
     data = request.get_json(silent=True) or {}
 
-
     repo_url = data.get("url")
 
 
 
     if not repo_url:
 
-
         return jsonify({
 
-            "status":
-            "error",
+            "status":"error",
 
-            "message":
-            "Repository URL required"
+            "message":"Repository URL required"
 
         }),400
-
-
 
 
 
@@ -351,39 +286,20 @@ def scan_github():
 
 
         git.Repo.clone_from(
-
             repo_url,
-
             folder
-
         )
-
 
 
         results=[]
 
         files_scanned=0
 
-        score=100
+        total_score=100
 
 
 
-        weak_passwords=[
-
-            "123456",
-
-            "password",
-
-            "admin",
-
-            "qwerty"
-
-        ]
-
-
-
-
-        for root,dirs,files in os.walk(folder):
+        for root, dirs, files in os.walk(folder):
 
 
             dirs[:] = [
@@ -393,14 +309,12 @@ def scan_github():
                 if d not in [
 
                     ".git",
-
                     ".venv",
-
                     "venv",
-
                     "node_modules",
-
-                    "__pycache__"
+                    "__pycache__",
+                    "tests",
+                    "test"
 
                 ]
 
@@ -415,9 +329,7 @@ def scan_github():
 
 
 
-
             for filename in files:
-
 
 
                 if not filename.endswith(".py"):
@@ -426,154 +338,59 @@ def scan_github():
 
 
 
-
                 files_scanned += 1
 
 
-
-                file_path=os.path.join(
-
+                path=os.path.join(
                     root,
-
                     filename
-
                 )
-
-
-
-                issues=[]
-
 
 
                 try:
 
 
                     with open(
-
-                        file_path,
-
+                        path,
                         "r",
-
                         encoding="utf-8",
-
                         errors="ignore"
-
                     ) as f:
 
-
-                        lines=f.readlines()
-
+                        code=f.read()
 
 
 
+                    analysis=analyze_security(code)
 
-                    for line_number,line in enumerate(lines,start=1):
 
+                    if analysis["score"] < total_score:
 
-                        text=line.lower()
-
+                        total_score=analysis["score"]
 
 
 
 
-                        if "password =" in text:
+                    issues=[]
 
 
-                            issues.append({
-
-                                "issue":
-                                "Hardcoded Password",
-
-                                "line":
-                                line_number,
-
-                                "severity":
-                                "High"
-
-                            })
+                    for item in analysis["vulnerabilities"]:
 
 
-                            score -=20
-
-
-
-
-
-
-                        if "=" in text and any(
-
-                            f'"{word}"' in text or f"'{word}'" in text
-
-                            for word in weak_passwords
-
-                        ):
-
+                        if item["severity"] != "Safe":
 
                             issues.append({
 
                                 "issue":
-                                "Weak Password",
+                                item["title"],
 
                                 "line":
-                                line_number,
+                                item["line"],
 
                                 "severity":
-                                "Medium"
+                                item["severity"]
 
                             })
-
-
-                            score -=10
-
-
-
-
-
-
-                        if "eval(" in text:
-
-
-                            issues.append({
-
-                                "issue":
-                                "Dangerous eval()",
-
-                                "line":
-                                line_number,
-
-                                "severity":
-                                "High"
-
-                            })
-
-
-                            score -=20
-
-
-
-
-
-
-                        if "select" in text:
-
-
-                            issues.append({
-
-                                "issue":
-                                "SQL Injection",
-
-                                "line":
-                                line_number,
-
-                                "severity":
-                                "Critical"
-
-                            })
-
-
-                            score -=30
-
-
 
 
 
@@ -582,11 +399,8 @@ def scan_github():
 
                         "file":
                         os.path.relpath(
-
-                            file_path,
-
+                            path,
                             folder
-
                         ),
 
                         "issues":
@@ -603,7 +417,6 @@ def scan_github():
 
 
 
-
         return jsonify({
 
             "status":
@@ -616,14 +429,12 @@ def scan_github():
             files_scanned,
 
             "score":
-            max(score,0),
+            total_score,
 
             "results":
             results
 
         })
-
-
 
 
 
@@ -642,19 +453,14 @@ def scan_github():
 
 
 
-
-
     finally:
 
 
         if os.path.exists(folder):
 
             shutil.rmtree(
-
                 folder,
-
                 ignore_errors=True
-
             )
 
 
@@ -662,9 +468,7 @@ def scan_github():
 
 
 
-
 if __name__=="__main__":
-
 
     app.run(
 
