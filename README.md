@@ -84,3 +84,19 @@ Before:
 
 password = "123456"
 
+## Screenshots
+
+### Home Page
+![Home Page](screenshots/home.png)
+
+### GitHub Scanner Section
+![GitHub Scanner](screenshots/github_section.png)
+
+### Security Analysis
+![Security Analysis](screenshots/analysis.png)
+
+### Auto Patch Generator
+![Auto Patch](screenshots/patch.png)
+
+### GitHub Repository Scan Result
+![GitHub Scan](screenshots/github_scan.png)
