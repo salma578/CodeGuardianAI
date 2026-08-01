@@ -305,36 +305,26 @@ def scan_github():
 
 
         for root, dirs, files in os.walk(folder):
-
-
-            dirs[:] = [
+             if "backend" in root:
+                 continue
+             dirs[:] = [
 
                 d for d in dirs
 
                 if d not in [
-
-                    ".git",
-                    ".venv",
-                    "venv",
-                    "node_modules",
-                    "__pycache__",
-                    "tests",
-                    "test"
-
-                ]
-
-            ]
-
-
-
-            if "site-packages" in root:
+                     ".git",
+                     ".venv",
+                     "venv",
+                     "node_modules",
+                     "__pycache__",
+                     "tests",
+                     "test"
+                     ]
+                     ]
+             if "site-packages" in root:
 
                 continue
-
-
-
-
-            for filename in files:
+             for filename in files:
 
                 if not filename.endswith(".py"):
                     continue
