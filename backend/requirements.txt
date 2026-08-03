@@ -1,4 +1,2 @@
 Flask
 Flask-Cors
-GitPython
-gunicorn
