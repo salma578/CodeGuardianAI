@@ -287,12 +287,11 @@ def scan_github():
 
 
     try:
-
-
-        return jsonify({
-    "status": "error",
-    "message": "GitHub scanning is temporarily unavailable on the deployed version."
-})
+        import git
+        git.Repo.clone_from(
+            repo_url,
+            folder
+            )
         results=[]
 
         files_scanned=0
