@@ -96,7 +96,7 @@ try{
 
 
 const response = await fetch(
-  "https://code-guardian-ai-acfe.vercel.app/analyze",
+  "https://codeguardianai.onrender.com/analyze",
   {
 
 method:"POST",
@@ -165,7 +165,7 @@ try{
 
 
 const response = await fetch(
-  "https://code-guardian-ai-acfe.vercel.app/generate_patch",
+  "https://codeguardianai.onrender.com/generate_patch",
   {
 method:"POST",
 
@@ -241,7 +241,7 @@ try{
 
 
 const response = await fetch(
-  "https://code-guardian-ai-acfe.vercel.app/scan_github",
+  "https://codeguardianai.onrender.com/scan_github",
   {
 method:"POST",
 
