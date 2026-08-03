@@ -293,8 +293,6 @@ def scan_github():
     "status": "error",
     "message": "GitHub scanning is temporarily unavailable on the deployed version."
 })
-
-
         results=[]
 
         files_scanned=0
