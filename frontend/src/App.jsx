@@ -97,7 +97,7 @@ try{
 
 const response=await fetch(
 
-"http://127.0.0.1:5000/analyze",
+fetch("/api/analyze"),
 
 {
 
@@ -168,7 +168,7 @@ try{
 
 const response=await fetch(
 
-"http://127.0.0.1:5000/generate_patch",
+fetch("/api/generate_patch"),
 
 {
 
@@ -247,7 +247,7 @@ try{
 
 const response=await fetch(
 
-"http://127.0.0.1:5000/scan_github",
+fetch("/api/scan_github"),
 
 {
 
