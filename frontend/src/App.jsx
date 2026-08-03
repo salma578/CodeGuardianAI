@@ -95,11 +95,9 @@ setLoading(true);
 try{
 
 
-const response=await fetch(
-
-fetch("/api/analyze"),
-
-{
+const response = await fetch(
+  "https://code-guardian-ai-acfe.vercel.app/analyze",
+  {
 
 method:"POST",
 
@@ -166,12 +164,9 @@ const generatePatch=async()=>{
 try{
 
 
-const response=await fetch(
-
-fetch("/api/generate_patch"),
-
-{
-
+const response = await fetch(
+  "https://code-guardian-ai-acfe.vercel.app/generate_patch",
+  {
 method:"POST",
 
 headers:{
@@ -245,12 +240,9 @@ setGithubLoading(true);
 try{
 
 
-const response=await fetch(
-
-fetch("/api/scan_github"),
-
-{
-
+const response = await fetch(
+  "https://code-guardian-ai-acfe.vercel.app/scan_github",
+  {
 method:"POST",
 
 headers:{
